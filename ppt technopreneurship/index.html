@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Presensi Otomatis Berbasis IoT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0f0f11; overflow: hidden; height: 100vh; }
+
+        .slide { display: none; width: 100%; height: 100vh; padding: 48px 72px 52px; flex-direction: column; justify-content: center; }
+        .slide.active { display: flex; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .tag { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 12px; }
+        .title { font-size: 36px; font-weight: 700; color: #fff; line-height: 1.15; margin-bottom: 24px; }
+        .title span { color: #6366f1; }
+
+        .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 16px 20px; }
+        .card h3 { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+        .card p { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.55; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+
+        .num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; padding: 8px 16px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.3); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        td { padding: 10px 16px; color: rgba(255,255,255,0.6); border-bottom: 1px solid rgba(255,255,255,0.04); }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+
+        .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 12px 72px; background: rgba(15,15,17,0.92); border-top: 1px solid rgba(255,255,255,0.06); z-index: 50; }
+        .dots { display: flex; gap: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); cursor: pointer; transition: all 0.2s; border: none; }
+        .dot.active { background: #6366f1; transform: scale(1.3); }
+        .page { font-size: 12px; color: rgba(255,255,255,0.25); font-variant-numeric: tabular-nums; }
+
+        .arrows { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 50; }
+        .arrows button { width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .arrows button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .title-slide { text-align: center; align-items: center; justify-content: center; }
+        .title-slide .main-title { font-size: 34px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 12px; letter-spacing: -0.02em; }
+        .title-slide .main-title span { color: #6366f1; }
+        .title-slide .subtitle { font-size: 13px; color: rgba(255,255,255,0.3); margin-bottom: 48px; font-weight: 400; }
+        .title-slide .divider { width: 48px; height: 2px; background: #6366f1; border-radius: 99px; margin: 0 auto 36px; }
+        .title-slide .member { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 0; font-size: 14px; color: rgba(255,255,255,0.7); }
+        .title-slide .member .nim { font-size: 12px; color: rgba(255,255,255,0.3); font-variant-numeric: tabular-nums; }
+        .title-slide .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+        .title-slide .dosen { margin-top: 28px; font-size: 11px; color: rgba(255,255,255,0.18); }
+
+        /* Slide 8 — compact layout */
+        .slide-last { justify-content: flex-start; padding-top: 40px; }
+        .slide-last .tag { margin-bottom: 10px; }
+        .slide-last .title { font-size: 32px; margin-bottom: 18px; }
+        .slide-last .grid-2 { gap: 10px; margin-bottom: 14px; }
+        .slide-last .card { padding: 14px 18px; }
+        .slide-last .card p { font-size: 11.5px; line-height: 1.5; }
+
+        .indikator-table td.indikator { color: rgba(255,255,255,0.85); font-size: 12.5px; font-weight: 500; }
+        .indikator-table td.verif { color: rgba(255,255,255,0.55); font-size: 12px; }
+        .indikator-table th { padding: 7px 16px; }
+        .indikator-table td { padding: 9px 16px; }
+        .indikator-table tr:last-child td { border-bottom: none; }
+        .indikator-table tr:last-child td.indikator {
+            color: rgba(255,255,255,0.92);
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .indikator-table tr:last-child td.verif {
+            color: rgba(255,255,255,0.65);
+            font-size: 12.5px;
+        }
+
+        .thanks-section { text-align: center; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .thanks-text { font-size: 17px; font-weight: 300; color: rgba(255,255,255,0.35); letter-spacing: 0.04em; }
+    </style>
+</head>
+<body>
+
+<!-- SLIDE 0 — JUDUL -->
+<div class="slide active title-slide" id="s0">
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#6366f1;margin-bottom:20px">Proyek Inovasi Digital — 2026</div>
+    <div class="main-title">Rancang Bangun Sistem Presensi Otomatis<br>Berbasis <span>IoT</span> dengan NFC Module dan ESP32<br>Berbasis <span>WEBSITE</span></div>
+    <div class="subtitle">Program Studi Ilmu Komputer · Fakultas Sains dan Teknologi · Universitas Putra Bangsa</div>
+    <div class="divider"></div>
+    <div style="margin-bottom:8px;font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.2)">Anggota Kelompok</div>
+    <div class="member">
+        <div class="avatar" style="background:rgba(99,102,241,0.15);color:#6366f1">NA</div>
+        <span>Nurita Ahadhini</span>
+        <span class="nim">(230202824)</span>
+    </div>
+    <div class="member">
+        <div class="avatar" style="background:rgba(168,85,247,0.15);color:#a855f7">BB</div>
+        <span>Bramby Dida Baskara</span>
+        <span class="nim">(230202794)</span>
+    </div>
+    <div class="member">
+        <div class="avatar" style="background:rgba(16,185,129,0.15);color:#10b981">MR</div>
+        <span>Muhammad Rifki A.N</span>
+        <span class="nim">(210202579)</span>
+    </div>
+    <div class="dosen">Dosen Pengampu: Awaludin Abid S.Kom., M.Kom</div>
+</div>
+
+<!-- SLIDE 1 — Analisis Permasalahan -->
+<div class="slide" id="s1">
+    <div class="tag" style="color:#6366f1">01 — Analisis Permasalahan</div>
+    <div class="title">Analisis Kondisi <span>Saat Ini</span></div>
+    <div class="card" style="padding:0; overflow:hidden;">
+        <table>
+            <thead><tr><th>No</th><th>Kondisi Saat Ini</th><th>Permasalahan</th><th>Dampak</th></tr></thead>
+            <tbody>
+                <tr><td style="color:#6366f1;font-weight:600">1</td><td style="color:rgba(255,255,255,0.75)">Presensi manual menggunakan pencatatan guru</td><td style="color:#f97316">Waktu lama, satu per satu</td><td>Waktu pembelajaran berkurang</td></tr>
+                <tr><td style="color:#6366f1;font-weight:600">2</td><td style="color:rgba(255,255,255,0.75)">Data direkap ulang secara manual</td><td style="color:#f97316">Kesalahan penulisan, data ganda</td><td>Akurasi data menurun</td></tr>
+                <tr><td style="color:#6366f1;font-weight:600">3</td><td style="color:rgba(255,255,255,0.75)">Belum ada sistem terintegrasi</td><td style="color:#f97316">Rekapitulasi harus manual</td><td>Laporan lambat & tidak efisien</td></tr>
+                <tr><td style="color:#6366f1;font-weight:600">4</td><td style="color:rgba(255,255,255,0.75)">Orang tua tidak terima info langsung</td><td style="color:#f97316">Tidak ada notifikasi otomatis</td><td>Orang tua sulit memantau</td></tr>
+                <tr><td style="color:#6366f1;font-weight:600">5</td><td style="color:rgba(255,255,255,0.75)">Identifikasi bergantung pada guru</td><td style="color:#f97316">Tidak ada identifikasi otomatis</td><td>Risiko manipulasi data</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- SLIDE 2 — Permasalahan -->
+<div class="slide" id="s2">
+    <div class="tag" style="color:#f97316">02 — Permasalahan</div>
+    <div class="title">Identifikasi <span>Permasalahan</span></div>
+    <div class="grid-2">
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <div class="num" style="background:rgba(249,115,22,0.15);color:#f97316">1</div>
+                <h3>Proses Manual Memakan Waktu</h3>
+            </div>
+            <p>Absensi kertas dilakukan berurutan satu per satu. Untuk 30 peserta, waktu terbuang ±5 menit per sesi dan mengganggu waktu pembelajaran.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <div class="num" style="background:rgba(239,68,68,0.15);color:#ef4444">2</div>
+                <h3>Rentan Kecurangan</h3>
+            </div>
+            <p>Titip absensi, pemalsuan tanda tangan, dan pengisian oleh pihak yang tidak berhak sulit terdeteksi, mengurangi validitas data kedisiplinan.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <div class="num" style="background:rgba(245,158,11,0.15);color:#f59e0b">3</div>
+                <h3>Rekapitulasi Rawan Error</h3>
+            </div>
+            <p>Data kertas dikumpulkan, disortir, lalu diinput manual ke digital. Proses repetitif ini sangat rentan human error dan ketidaksesuaian data.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <div class="num" style="background:rgba(236,72,153,0.15);color:#ec4899">4</div>
+                <h3>Keterbatasan Akses Data</h3>
+            </div>
+            <p>Data hanya tersedia fisik di lokasi. Pihak berkepentingan tidak bisa memantau kehadiran real-time dari jarak jauh melalui platform digital.</p>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 3 — Solusi -->
+<div class="slide" id="s3">
+    <div class="tag" style="color:#10b981">03 — Solusi</div>
+    <div class="title">Solusi yang <span>Diberikan</span></div>
+    <div class="grid-4" style="margin-bottom:20px">
+        <div class="card" style="text-align:center">
+            <iconify-icon icon="solar:card-recive-linear" width="28" style="color:#10b981;margin-bottom:12px"></iconify-icon>
+            <h3 style="font-size:13px">Baca NFC Otomatis</h3>
+            <p style="font-size:12px">Modul PN532 membaca UID kartu dalam hitungan milidetik</p>
+        </div>
+        <div class="card" style="text-align:center">
+            <iconify-icon icon="solar:wi-fi-router-linear" width="28" style="color:#3b82f6;margin-bottom:12px"></iconify-icon>
+            <h3 style="font-size:13px">Kirim Data Nirkabel</h3>
+            <p style="font-size:12px">ESP32 mengirim via Wi-Fi tanpa kabel ke server</p>
+        </div>
+        <div class="card" style="text-align:center">
+            <iconify-icon icon="solar:shield-check-linear" width="28" style="color:#a855f7;margin-bottom:12px"></iconify-icon>
+            <h3 style="font-size:13px">Validasi Otomatis</h3>
+            <p style="font-size:12px">Cek duplikasi tap 30 detik & kecocokan UID di database</p>
+        </div>
+        <div class="card" style="text-align:center">
+            <iconify-icon icon="solar:monitor-smartphone-linear" width="28" style="color:#6366f1;margin-bottom:12px"></iconify-icon>
+            <h3 style="font-size:13px">Dashboard Web</h3>
+            <p style="font-size:12px">Data real-time, riwayat & rekapitulasi via browser</p>
+        </div>
+    </div>
+    <div class="card" style="padding:14px 20px">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:12px;color:rgba(255,255,255,0.5)">
+            <span><iconify-icon icon="solar:check-circle-linear" width="14" style="color:#10b981;vertical-align:-2px"></iconify-icon> Mudah digunakan</span>
+            <span><iconify-icon icon="solar:check-circle-linear" width="14" style="color:#10b981;vertical-align:-2px"></iconify-icon> 30 peserta < 1 menit</span>
+            <span><iconify-icon icon="solar:check-circle-linear" width="14" style="color:#10b981;vertical-align:-2px"></iconify-icon> Zero human error</span>
+            <span><iconify-icon icon="solar:check-circle-linear" width="14" style="color:#10b981;vertical-align:-2px"></iconify-icon> Komponen terjangkau</span>
+            <span><iconify-icon icon="solar:check-circle-linear" width="14" style="color:#10b981;vertical-align:-2px"></iconify-icon> Scalable</span>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 4 — Teknologi -->
+<div class="slide" id="s4">
+    <div class="tag" style="color:#3b82f6">04 — Teknologi</div>
+    <div class="title">Teknologi yang <span>Digunakan</span></div>
+    <div class="grid-3" style="margin-bottom:16px">
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <iconify-icon icon="solar:chip-linear" width="24" style="color:#3b82f6"></iconify-icon>
+                <div><h3>ESP32</h3><span style="font-size:10px;color:rgba(255,255,255,0.25)">Espressif Systems</span></div>
+            </div>
+            <p style="font-size:12px">• Dual-core 32-bit 240MHz<br>• Built-in Wi-Fi & Bluetooth<br>• Otak pemroses & pengirim data</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <iconify-icon icon="solar:card-recive-linear" width="24" style="color:#a855f7"></iconify-icon>
+                <div><h3>NFC PN532</h3><span style="font-size:10px;color:rgba(255,255,255,0.25)">13.56 MHz</span></div>
+            </div>
+            <p style="font-size:12px">• Baca UID kartu/tag NFC<br>• Jarak baca 3–5 cm<br>• Protokol I2C, baca < 1 detik</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <iconify-icon icon="solar:code-square-linear" width="24" style="color:#10b981"></iconify-icon>
+                <div><h3>Web Stack</h3><span style="font-size:10px;color:rgba(255,255,255,0.25)">PHP + MySQL</span></div>
+            </div>
+            <p style="font-size:12px">• PHP + CodeIgniter<br>• MySQL 8.x via XAMPP<br>• Dashboard responsif</p>
+        </div>
+    </div>
+    <div class="card" style="padding:14px 20px">
+        <div style="display:flex;gap:32px;flex-wrap:wrap;font-size:12px">
+            <span style="color:rgba(255,255,255,0.5)"><iconify-icon icon="solar:monitor-linear" width="14" style="color:rgba(255,255,255,0.3);vertical-align:-2px"></iconify-icon> LCD I2C 20x4</span>
+            <span style="color:rgba(255,255,255,0.5)"><iconify-icon icon="solar:card-linear" width="14" style="color:rgba(255,255,255,0.3);vertical-align:-2px"></iconify-icon> Kartu NFC (UID)</span>
+            <span style="color:rgba(255,255,255,0.5)"><iconify-icon icon="solar:programming-linear" width="14" style="color:rgba(255,255,255,0.3);vertical-align:-2px"></iconify-icon> Arduino IDE 2.x (C/C++)</span>
+            <span style="color:rgba(255,255,255,0.5)"><iconify-icon icon="solar:server-linear" width="14" style="color:rgba(255,255,255,0.3);vertical-align:-2px"></iconify-icon> HTTP POST JSON</span>
+        </div>
+    </div>
+    <p style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.3)"><iconify-icon icon="solar:arrow-right-linear" width="12" style="vertical-align:-1px"></iconify-icon> Arsitektur: Input (NFC) → Proses (ESP32) → Komunikasi (Wi-Fi) → Penyimpanan (MySQL) → Antarmuka (Web)</p>
+</div>
+
+<!-- SLIDE 5 — Potensi Pasar -->
+<div class="slide" id="s5">
+    <div class="tag" style="color:#a855f7">05 — Potensi Pasar</div>
+    <div class="title">Potensi <span>Pasar</span></div>
+    <div class="grid-3" style="margin-bottom:16px">
+        <div class="card" style="text-align:center">
+            <iconify-icon icon="solar:square-academic-cap-linear" width="32" style="color:#6366f1;margin-bottom:10px"></iconify-icon>
+            <h3>Pendidikan</h3>
+            <p style="font-size:12px;margin-bottom:8px">Sekolah, universitas, lembaga pelatihan</p>
+            <div style="font-size:22px;font-weight:700;color:#6366f1">260K+</div>
+            <p style="font-size:10px;color:rgba(255,255,255,0.25)">Sekolah di Indonesia</p>
+        </div>
+        <div class="card" style="text-align:center">
+            <iconify-icon icon="solar:buildings-2-linear" width="32" style="color:#10b981;margin-bottom:10px"></iconify-icon>
+            <h3>Perkantoran</h3>
+            <p style="font-size:12px;margin-bottom:8px">Perusahaan kecil-menengah</p>
+            <div style="font-size:22px;font-weight:700;color:#10b981">64M+</div>
+            <p style="font-size:10px;color:rgba(255,255,255,0.25)">UMKM di Indonesia</p>
+        </div>
+        <div class="card" style="text-align:center">
+            <iconify-icon icon="solar:users-group-rounded-linear" width="32" style="color:#f97316;margin-bottom:10px"></iconify-icon>
+            <h3>Organisasi</h3>
+            <p style="font-size:12px;margin-bottom:8px">Komunitas, event, organisasi</p>
+            <div style="font-size:22px;font-weight:700;color:#f97316">∞</div>
+            <p style="font-size:10px;color:rgba(255,255,255,0.25)">Berbagai skala</p>
+        </div>
+    </div>
+    <div class="grid-2">
+        <div class="card" style="padding:16px 20px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:10px">Pendorong Pasar</div>
+            <p style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.8">→ Tren digitalisasi sektor pendidikan<br>→ Pertumbuhan IoT Indonesia CAGR >20%<br>→ Kebutuhan efisiensi operasional</p>
+        </div>
+        <div class="card" style="padding:16px 20px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:10px">Keunggulan Kompetitif</div>
+            <p style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.8">→ Biaya jauh lebih rendah dari fingerprint komersial<br>→ Komponen open-source, mudah direplikasi<br>→ Tanpa instalasi aplikasi (cukup browser)</p>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 6 — Analisis Biaya -->
+<div class="slide" id="s6">
+    <div class="tag" style="color:#eab308">06 — Analisis Biaya</div>
+    <div class="title">Analisis <span>Biaya</span></div>
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:14px">
+        <div class="card" style="padding:0;overflow:hidden">
+            <table>
+                <thead><tr><th>Komponen</th><th style="text-align:center">Qty</th><th style="text-align:right">Harga</th></tr></thead>
+                <tbody>
+                    <tr><td style="color:rgba(255,255,255,0.75)">ESP32 DevKit</td><td style="text-align:center">1</td><td style="text-align:right">Rp 35rb – 65rb</td></tr>
+                    <tr><td style="color:rgba(255,255,255,0.75)">Modul NFC PN532</td><td style="text-align:center">1</td><td style="text-align:right">Rp 25rb – 50rb</td></tr>
+                    <tr><td style="color:rgba(255,255,255,0.75)">LCD I2C 20x4</td><td style="text-align:center">1</td><td style="text-align:right">Rp 25rb – 40rb</td></tr>
+                    <tr><td style="color:rgba(255,255,255,0.75)">Kartu NFC</td><td style="text-align:center">~30</td><td style="text-align:right">Rp 3rb – 7rb/pcs</td></tr>
+                    <tr><td style="color:rgba(255,255,255,0.75)">Kabel, LED, Buzzer, Box</td><td style="text-align:center">1 set</td><td style="text-align:right">Rp 20rb – 35rb</td></tr>
+                    <tr style="background:rgba(255,255,255,0.03)"><td style="color:#fff;font-weight:600" colspan="2">Total Hardware</td><td style="text-align:right;color:#eab308;font-weight:700">Rp 195rb – 395rb</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="card" style="padding:16px 20px">
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:10px">Software</div>
+                <p style="font-size:12px;color:rgba(255,255,255,0.5);line-height:2">XAMPP / PHP / MySQL <span style="color:#10b981;font-weight:600;float:right">Gratis</span><br>Arduino IDE <span style="color:#10b981;font-weight:600;float:right">Gratis</span><br>CodeIgniter <span style="color:#10b981;font-weight:600;float:right">Gratis</span></p>
+            </div>
+            <div class="card" style="padding:16px 20px">
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:10px">Perbandingan</div>
+                <p style="font-size:12px;color:rgba(255,255,255,0.5);line-height:2">Solusi ini <span style="color:#eab308;font-weight:600;float:right">~Rp 300K</span><br>Fingerprint komersial <span style="color:rgba(255,255,255,0.3);float:right">~Rp 1.5–5Jt</span><br>Cloud berlangganan <span style="color:rgba(255,255,255,0.3);float:right">~Rp 500K/bln</span></p>
+            </div>
+            <div class="card" style="padding:16px 20px;background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.15)">
+                <p style="font-size:12px;color:#10b981;font-weight:600">Penghematan jangka panjang: Rp 0/bulan</p>
+                <p style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px">Tanpa biaya kertas, langganan, atau tenaga admin khusus</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 7 — Inovasi -->
+<div class="slide" id="s7">
+    <div class="tag" style="color:#6366f1">07 — Inovasi</div>
+    <div class="title">Aspek <span>Inovasi</span></div>
+    <div class="grid-2">
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <iconify-icon icon="solar:link-round-angle-linear" width="20" style="color:#6366f1"></iconify-icon>
+                <h3>Integrasi IoT End-to-End</h3>
+            </div>
+            <p>Menggabungkan hardware (ESP32+NFC), komunikasi Wi-Fi/HTTP, dan web (PHP+MySQL) dalam satu ekosistem presensi utuh.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <iconify-icon icon="solar:hand-shake-linear" width="20" style="color:#10b981"></iconify-icon>
+                <h3>Zero-App Approach</h3>
+            </div>
+            <p>Tidak perlu instalasi aplikasi. Semua manajemen dan monitoring melalui browser, menghilangkan barrier adopsi teknologi.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <iconify-icon icon="solar:tag-price-linear" width="20" style="color:#f97316"></iconify-icon>
+                <h3>Low-Cost High-Impact</h3>
+            </div>
+            <p>Membuktikan sistem presensi digital terintegrasi bisa dibangun < Rp 400rb dengan komponen open-source, replikable untuk institusi beranggaran terbatas.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <iconify-icon icon="solar:chat-round-dots-linear" width="20" style="color:#ec4899"></iconify-icon>
+                <h3>Notifikasi WhatsApp Otomatis</h3>
+            </div>
+            <p>Data kehadiran diteruskan otomatis ke wali murid via WhatsApp, meningkatkan transparansi dan komunikasi sekolah-orang tua.</p>
+        </div>
+    </div>
+    <div class="card" style="margin-top:16px;padding:16px 20px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);text-align:center;gap:12px">
+            <div><div style="font-size:20px;font-weight:700;color:#6366f1">4 Komponen</div><p style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px">Terintegrasi penuh</p></div>
+            <div><div style="font-size:20px;font-weight:700;color:#10b981">< 1 Detik</div><p style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px">Waktu proses tap</p></div>
+            <div><div style="font-size:20px;font-weight:700;color:#f97316">Open Source</div><p style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px">Tanpa biaya lisensi</p></div>
+            <div><div style="font-size:20px;font-weight:700;color:#ec4899">RAD</div><p style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px">Pengembangan cepat</p></div>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 8 — Hasil Diharapkan + Terima Kasih -->
+<div class="slide slide-last" id="s8">
+    <div class="tag" style="color:#10b981">08 — Hasil Diharapkan</div>
+    <div class="title">Hasil yang <span>Diharapkan</span></div>
+    <div class="grid-2" style="margin-bottom:14px">
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <iconify-icon icon="solar:check-circle-linear" width="16" style="color:#10b981"></iconify-icon>
+                <h3>Prototype Fungsional</h3>
+            </div>
+            <p>Sistem presensi otomatis lengkap: hardware (ESP32+NFC) + software web yang mencatat data dari tap kartu hingga tampil di dashboard.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <iconify-icon icon="solar:check-circle-linear" width="16" style="color:#3b82f6"></iconify-icon>
+                <h3>Efisiensi Proses</h3>
+            </div>
+            <p>30 peserta: dari 5–10 menit (manual) menjadi < 1 menit. Waktu efektif pembelajaran bertambah signifikan.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <iconify-icon icon="solar:check-circle-linear" width="16" style="color:#a855f7"></iconify-icon>
+                <h3>Akurasi & Transparansi</h3>
+            </div>
+            <p>UID unik menghilangkan titip absensi. Data otomatis tersimpan di database, bisa dipantau real-time dosen dan orang tua.</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <iconify-icon icon="solar:check-circle-linear" width="16" style="color:#f97316"></iconify-icon>
+                <h3>Bukti Penerapan IoT</h3>
+            </div>
+            <p>Pengalaman langsung menerapkan IoT untuk masalah nyata + dokumentasi terstruktur sebagai referensi pengembangan.</p>
+        </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+        <table class="indikator-table">
+            <thead><tr><th>Indikator</th><th style="text-align:center">Target</th><th>Verifikasi</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td class="indikator">Fungsi utama sistem berjalan dengan benar</td>
+                    <td style="text-align:center"><span class="badge" style="background:rgba(16,185,129,0.12);color:#10b981">100%</span></td>
+                    <td class="verif">Tabel pengujian fungsional</td>
+                </tr>
+                <tr>
+                    <td class="indikator">Akurasi pembacaan kartu NFC</td>
+                    <td style="text-align:center"><span class="badge" style="background:rgba(16,185,129,0.12);color:#10b981">> 95%</span></td>
+                    <td class="verif">Pengujian berulang 50× tap kartu</td>
+                </tr>
+                <tr>
+                    <td class="indikator">Waktu respons dari tap hingga tampil di dashboard</td>
+                    <td style="text-align:center"><span class="badge" style="background:rgba(59,130,246,0.12);color:#3b82f6">< 3 detik</span></td>
+                    <td class="verif">Pengukuran waktu tap → data terekam</td>
+                </tr>
+                <tr>
+                    <td class="indikator">Keberhasilan pengiriman data ESP32 ke server</td>
+                    <td style="text-align:center"><span class="badge" style="background:rgba(16,185,129,0.12);color:#10b981">> 90%</span></td>
+                    <td class="verif">Log komunikasi HTTP request/response</td>
+                </tr>
+                <tr>
+                    <td class="indikator" style="color:rgba(255,255,255,0.92);font-weight:600;font-size:13px">Kemudahan penggunaan sistem menurut responden</td>
+                    <td style="text-align:center"><span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;font-size:12px">≥ 4 dari 5</span></td>
+                    <td class="verif" style="color:rgba(255,255,255,0.65);font-size:12.5px">Kuesioner penilaian oleh pengguna setelah uji coba langsung</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Terima Kasih -->
+    <div class="thanks-section">
+        <div class="thanks-text">Terima kasih atas perhatiannya</div>
+        <div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.15)">Nurita A. · Muhammad R.A. · Bramby D.B. — Ilmu Komputer, Universitas Putra Bangsa</div>
+        <div style="margin-top:2px;font-size:10px;color:rgba(255,255,255,0.1)">Dosen Pengampu: Awaludin Abid S.Kom., M.Kom — 2026</div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer-bar">
+    <div class="dots">
+        <button class="dot active" onclick="go(0)"></button>
+        <button class="dot" onclick="go(1)"></button>
+        <button class="dot" onclick="go(2)"></button>
+        <button class="dot" onclick="go(3)"></button>
+        <button class="dot" onclick="go(4)"></button>
+        <button class="dot" onclick="go(5)"></button>
+        <button class="dot" onclick="go(6)"></button>
+        <button class="dot" onclick="go(7)"></button>
+        <button class="dot" onclick="go(8)"></button>
+    </div>
+    <div class="page"><span id="cur">01</span> / 09</div>
+</div>
+
+<!-- Arrows -->
+<div class="arrows">
+    <button onclick="prev()"><iconify-icon icon="solar:alt-arrow-up-linear" width="16"></iconify-icon></button>
+    <button onclick="next()"><iconify-icon icon="solar:alt-arrow-down-linear" width="16"></iconify-icon></button>
+</div>
+
+<script>
+    let c=0, total=9, busy=false;
+    function go(i){if(busy||i===c||i<0||i>=total)return;busy=true;document.getElementById('s'+c).classList.remove('active');c=i;document.getElementById('s'+c).classList.add('active');upd();setTimeout(()=>busy=false,400)}
+    function next(){if(c<total-1)go(c+1)}
+    function prev(){if(c>0)go(c-1)}
+    function upd(){document.getElementById('cur').textContent=String(c+1).padStart(2,'0');document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===c))}
+    document.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowRight'||e.key===' '){e.preventDefault();next()}if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();prev()}});
+    let ty=0;document.addEventListener('touchstart',e=>ty=e.changedTouches[0].screenY);document.addEventListener('touchend',e=>{let d=ty-e.changedTouches[0].screenY;if(Math.abs(d)>50){d>0?next():prev()}});
+    let wt=null;document.addEventListener('wheel',e=>{if(wt)return;wt=setTimeout(()=>wt=null,700);e.deltaY>20?next():e.deltaY<-20&&prev()},{passive:true});
+</script>
+</body>
+</html>
